@@ -19,6 +19,38 @@ const int LED_PIN = 13;
 /* Global variables */
 int var;
 
+/* Global objects */
+ZumoBuzzer buzzer;
+ZumoMotors motors;
+Pushbutton button(ZUMO_BUTTON); // pushbutton on pin 12
+ 
+#define NUM_SENSORS 6
+unsigned int sensor_values[NUM_SENSORS];
+ 
+ZumoReflectanceSensorArray sensors(QTR_NO_EMITTER_PIN);
+
+
+/**
+ * Waits for an button push, and starts countdown.
+ */
+void waitForButtonAndCountDown()
+{
+  digitalWrite(LED, HIGH);
+  button.waitForButton();
+  digitalWrite(LED, LOW);
+   
+  // play audible countdown
+  for (int i = 0; i < 3; i++)
+  {
+    delay(1000);
+    buzzer.playNote(NOTE_G(3), 200, 15);
+  }
+  delay(1000);
+  buzzer.playNote(NOTE_G(4), 500, 15);  
+  delay(1000);
+}
+ 
+
 /**
  * Main setup function. Only runs ones.
  */
