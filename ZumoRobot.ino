@@ -1,7 +1,7 @@
 /*
  * Name:      ZumoRobot.ino
  * Created:   08/10/2017  13:00:00 PM
- * Authors:   André Storaug, ....
+ * Authors:   André Storaug, Eirik Thue, ....
  */
  #include "ZumoMotors.h"
 
