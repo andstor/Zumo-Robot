@@ -1,4 +1,5 @@
 # ZumoRobot
+ARDUINO ZUMO-ROBOT using the Pololu shield & robot
 
 ## Dependencies
 In order to compile and run this program, several **dependencies**(libraries) has to be installed.
