@@ -1,6 +1,9 @@
-#include <ZumoMotors.h>
-
-ZumoMotors motors;
+/*
+ * Name:      ZumoRobot.ino
+ * Created:   08/10/2017  13:00:00 PM
+ * Authors:   André Storaug, ....
+ */
+ #include "ZumoMotors.h"
 
 
 const int LED_PIN = 13;
