@@ -11,4 +11,4 @@ Each library has to be copied to the local Arduino-installation "library"-folder
 Alternativly, see [how to install libraries.](https://www.arduino.cc/en/Guide/Libraries)
 
 ## License
-ZumoRobot is released as open source software under the GPL v3 license, see the LICENSE file in the project root for the full license text.
+ZumoRobot is released as open source software under the [GNU GPL v3 license](http://www.gnu.org/copyleft/gpl.html), see the LICENSE file in the project root for the full license text.
