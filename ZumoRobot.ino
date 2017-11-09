@@ -17,7 +17,7 @@
 const int LED_PIN = 13;
 
 /* Global variables */
-int var;
+int debug = true;
 
 /* Global objects */
 ZumoBuzzer buzzer;
@@ -30,14 +30,47 @@ unsigned int sensor_values[NUM_SENSORS];
 ZumoReflectanceSensorArray sensors(QTR_NO_EMITTER_PIN);
 
 
+
+/**
+ * Main setup function. Only runs ones.
+ */
+void setup() {
+  if (debug) {
+      Serial.begin(9600);
+  }
+  
+  // put your setup code here, to run once:
+  pinMode(LED_PIN, OUTPUT);
+  
+  waitForButtonAndCountDown();
+}
+
+/**
+ * Main loop.
+ * Responsible for main program functionallity.
+ */
+void loop() {
+  // put your main code here, to run repeatedly:
+  digitalWrite(LED_PIN, HIGH);
+  
+/*  
+  int speed = 400;
+  for (int time = 0; time <= 500; time++) {
+    motors.setLeftSpeed(-speed);
+    motors.setRightSpeed(speed);
+    delay(2);
+  }
+*/
+}
+
 /**
  * Waits for an button push, and starts countdown.
  */
 void waitForButtonAndCountDown()
 {
-  digitalWrite(LED, HIGH);
+  digitalWrite(LED_PIN, HIGH);
   button.waitForButton();
-  digitalWrite(LED, LOW);
+  digitalWrite(LED_PIN, LOW);
    
   // play audible countdown
   for (int i = 0; i < 3; i++)
@@ -48,39 +81,8 @@ void waitForButtonAndCountDown()
   delay(1000);
   buzzer.playNote(NOTE_G(4), 500, 15);  
   delay(1000);
-}
- 
 
-/**
- * Main setup function. Only runs ones.
- */
-void setup() {
-  // put your setup code here, to run once:
-  pinMode(LED_PIN, OUTPUT);
-}
-
-/**
- * Main loop.
- * Responsible for main program functionallity.
- */
-void loop() {
-  // put your main code here, to run repeatedly:
-  digitalWrite(LED_PIN, HIGH);
-
-
-  for (int time = 0; time <= 500; time++) {
-    int speed = 100;
-
-    motors.setLeftSpeed(speed-50);
-    motors.setRightSpeed(speed+50);
-    delay(2);
-  }
-
-  for (int time = 0; time <= 500; time++) {
-    int speed = -100;
-
-    motors.setLeftSpeed(speed-50);
-    motors.setRightSpeed(speed+50);
-    delay(2);
+  if (debug) {
+    Serial.println();
   }
 }
