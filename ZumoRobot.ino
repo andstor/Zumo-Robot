@@ -15,21 +15,21 @@
 
 
 /* Global constants */
-const int LED_PIN = 13;
+ int LED_PIN = 13;
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
-const int QTR_THRESHOLD  1800 //
+const int QTR_THRESHOLD     = 1800; //
 
 // these might need to be tuned for different motor types
-const int REVERSE_SPEED     200 // 0 is stopped, 400 is full speed
-const int TURN_SPEED        200
-const int FORWARD_SPEED     100
-const int REVERSE_DURATION  200 // ms
-const int TURN_DURATION     300 // ms
+const int REVERSE_SPEED     = 200; // 0 is stopped, 400 is full speed
+const int TURN_SPEED        = 200;
+const int FORWARD_SPEED     = 100;
+const int REVERSE_DURATION  = 200; // ms
+const int TURN_DURATION     = 300; // ms
 
 
 /* Global variables */
-int debug = true;
+boolean debug = true;
 
 
 /* Global objects */
@@ -37,13 +37,12 @@ ZumoBuzzer buzzer;
 ZumoMotors motors;
 Pushbutton button(ZUMO_BUTTON); // pushbutton on pin 12
 
-//#define NUM_SENSORS 6
-//unsigned int sensor_values[NUM_SENSORS];
+
+const int NUM_SENSORS = 2;
+unsigned int sensor_values[NUM_SENSORS]; // Array to keep sensor values from ZumoReflectanceSensorArray.
 
 byte pins[] = {4, 5};
-ZumoReflectanceSensorArray sensor(pins, 2, 2000, QTR_NO_EMITTER_PIN); // 2000 = timeout after 2 ms
-
-
+ZumoReflectanceSensorArray sensors(pins, 2, 2000, QTR_NO_EMITTER_PIN); // 2000 = timeout after 2 ms; 
 
 
 
@@ -76,7 +75,7 @@ void waitForButtonAndCountDown()
    Drive forward and turn left or right when border is detected
    - Only reflectionsensor on pin 5 and 4 are used.
 */
-void function borderDetect() {
+void borderDetect() {
   sensors.read(sensor_values);
 
   if (sensor_values[0] > QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
@@ -118,8 +117,9 @@ void setup() {
   if (debug) {
     Serial.begin(9600);
   }
-
-  sensors.init(); // Initiate ZumoReflectanceSensorArray sensors.
+  
+  // Initiate ZumoReflectanceSensorArray sensors.
+  //sensors.init;
 
   // Uncomment if necessary to correct motor directions
   //motors.flipLeftMotor(true);
@@ -143,7 +143,7 @@ void loop() {
 
 
   // Debugging
-  if (debug) {
+  if (debug == true) {
     /**
        Ability to start or stop edge detection.
     */
