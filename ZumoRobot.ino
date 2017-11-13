@@ -156,7 +156,7 @@ void loop() {
     }
   }
 
-
+  borderDetect();
 
 
   /*
