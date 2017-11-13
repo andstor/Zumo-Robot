@@ -29,7 +29,7 @@ const int TURN_DURATION     300 // ms
 
 
 /* Global variables */
-int debug = true;
+boolean debug = true;
 
 
 /* Global objects */
