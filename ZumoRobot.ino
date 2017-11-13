@@ -152,10 +152,10 @@ void loop() {
       // if button is pressed, stop and wait for another press to go again
       motors.setSpeeds(0, 0);
       button.waitForRelease();
-      waitForButtonAndCountDown();
     }
   }
-
+  
+  waitForButtonAndCountDown();
   borderDetect();
 
 
