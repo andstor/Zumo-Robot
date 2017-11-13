@@ -40,8 +40,8 @@ Pushbutton button(ZUMO_BUTTON); // pushbutton on pin 12
 //#define NUM_SENSORS 6
 //unsigned int sensor_values[NUM_SENSORS];
 
-byte pins[] = {4, A5, 11, A0, A2, 5};
-ZumoReflectanceSensorArray sensor_values(pins, 6, 2000, QTR_NO_EMITTER_PIN); // 2000 = timeout after 2 ms
+byte pins[] = {4, 5};
+ZumoReflectanceSensorArray sensor(pins, 2, 2000, QTR_NO_EMITTER_PIN); // 2000 = timeout after 2 ms
 
 
 
