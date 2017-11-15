@@ -15,7 +15,10 @@
 
 
 /* Global constants */
- int LED_PIN = 13;
+const int LED_PIN = 13;
+const int EYE_SENSOR_LEFT = A1;
+const int EYE_SENSOR_RIGHT = A2;
+
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 const int QTR_THRESHOLD     = 1800; //
@@ -42,7 +45,7 @@ const int NUM_SENSORS = 2;
 unsigned int sensor_values[NUM_SENSORS]; // Array to keep sensor values from ZumoReflectanceSensorArray.
 
 byte pins[] = {4, 5};
-ZumoReflectanceSensorArray sensors(pins, 2, 2000, QTR_NO_EMITTER_PIN); // 2000 = timeout after 2 ms; 
+ZumoReflectanceSensorArray sensors(pins, 2, 2000, QTR_NO_EMITTER_PIN); // 2000 = timeout after 2 ms;
 
 
 
@@ -117,7 +120,7 @@ void setup() {
   if (debug) {
     Serial.begin(9600);
   }
-  
+
   // Initiate ZumoReflectanceSensorArray sensors.
   //sensors.init;
 
@@ -154,7 +157,7 @@ void loop() {
       button.waitForRelease();
     }
   }
-  
+
   waitForButtonAndCountDown();
   borderDetect();
 
@@ -168,3 +171,15 @@ void loop() {
     }
   */
 }
+void getDistance() {
+  int leftVal = analogRead(A1);
+  int rightVal = analogRead(A2);
+  map(leftVal, 0, 1024, 0, 10);
+  map(rightVal, 0, 1024, 0, 10);
+  enemyDetection(leftVal, rightVal);
+}
+
+void enemyDetection(int LEFT, int RIGHT){
+  
+}
+
