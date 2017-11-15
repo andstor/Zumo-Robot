@@ -12,6 +12,8 @@
 #include <ZumoMotors.h>
 #include <QTRSensors.h>
 #include <ZumoReflectanceSensorArray.h>
+#include <SharpDistSensor.h>
+
 
 
 /* Global constants */
@@ -44,6 +46,8 @@ int currentState = S_SEARCHING;
 bool enemyDetected = false;
 int leftDistance = 0;
 int rightDistance = 0;
+bool collision = false;
+
 
 /* Global objects */
 ZumoBuzzer buzzer;
@@ -82,6 +86,7 @@ void waitForButtonAndCountDown()
     Serial.println();
   }
 }
+
 
 
 
