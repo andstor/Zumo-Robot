@@ -18,8 +18,8 @@
 
 /* Global constants */
 const int LED_PIN = 13;
-const int EYE_SENSOR_LEFT = A1;
-const int EYE_SENSOR_RIGHT = A2;
+const int EYE_SENSOR_LEFT = A2;
+const int EYE_SENSOR_RIGHT = A1;
 
 // Window size of the median filter (odd number, 1 = no filtering)
 const byte mediumFilterWindowSize = 5;
@@ -105,15 +105,12 @@ bool checkBorderDetection() {
   sensors.read(sensor_values);
 
   if (sensor_values[0] > QTR_THRESHOLD || sensor_values[1] > QTR_THRESHOLD) { // Needs to be reversed if on black surface with white border.
+    
+    
     return true;
-    Serial.print("sensor_values[0]:::");
-    Serial.println(sensor_values[0]);
-    Serial.print("sensor_values[1]:::");
-    Serial.println(sensor_values[1]);
   }
   else {
     return false;
-    Serial.println("lolol2222222222222");
   }
 }
 
@@ -144,7 +141,7 @@ void borderDetected() {
 
     // Update direction target.
     directionTarget = RIGHT;
-
+    Serial.println(directionTarget);
   }
   else if (sensor_values[1] > QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
   {
@@ -157,6 +154,7 @@ void borderDetected() {
 
     // Update direction target.
     directionTarget = LEFT;
+    Serial.println(directionTarget);
   }
 }
 
@@ -208,14 +206,12 @@ void searchForEnemy(int dir) {
   {
     case 0:
       // Left
-      Serial.println("Info: Enemey seen to the left");
       motors.setLeftSpeed(-SEARCH_SPEED);
       motors.setRightSpeed(SEARCH_SPEED);
       break;
 
     case 1:
       // Right
-      Serial.println("Info: Enemey seen to the right");
 
       motors.setLeftSpeed(SEARCH_SPEED);
       motors.setRightSpeed(-SEARCH_SPEED);
@@ -237,7 +233,7 @@ bool checkEnemyPresence() {
   // Update distance sensor.
   readDistanceSensors();
 
-  if (leftDistance > DISTANCE_THRESHOLD || rightDistance > DISTANCE_THRESHOLD) {
+  if (leftDistance < DISTANCE_THRESHOLD || rightDistance < DISTANCE_THRESHOLD) {
     return true;
   }
   else {
@@ -247,23 +243,29 @@ bool checkEnemyPresence() {
 
 
 void chaseEnemy() {
-  int multiplyer = 2;
+  int multiplyer = 0.2;
   // SET LAST SEEN TARGET DIRECTION!!!!!!!!!!!!!!!!!!
   if (leftDistance > DISTANCE_THRESHOLD && rightDistance < DISTANCE_THRESHOLD) {
     // Object detected on right side.
     directionTarget = RIGHT;
-    motors.setLeftSpeed(SEARCH_SPEED);
-    motors.setRightSpeed(SEARCH_SPEED);
+    Serial.println("Info: Enemey seen to the right");
+
+    motors.setLeftSpeed(FORWARD_SPEED);
+    motors.setRightSpeed(FORWARD_SPEED*multiplyer);
   }
   else if (leftDistance < DISTANCE_THRESHOLD && rightDistance > DISTANCE_THRESHOLD) {
     // Object detected on left side.
     directionTarget = LEFT;
-    motors.setLeftSpeed(SEARCH_SPEED);
-    motors.setRightSpeed(SEARCH_SPEED);
-  }
-  else {
-    // Object is right in front.
+    Serial.println("Info: Enemey seen to the left");
 
+    motors.setLeftSpeed(FORWARD_SPEED*multiplyer);
+    motors.setRightSpeed(FORWARD_SPEED);
+  }
+  else if(leftDistance < DISTANCE_THRESHOLD && rightDistance < DISTANCE_THRESHOLD) {
+    // Object is right in front.
+    Serial.println("Info: Enemey up front");
+    motors.setLeftSpeed(FORWARD_SPEED);
+    motors.setRightSpeed(FORWARD_SPEED);
   }
 }
 
@@ -341,6 +343,7 @@ void loop() {
       else if (checkEnemyPresence() == true)
       {
         // SATRT CHASING function
+        chaseEnemy();
         changeStateTo(S_CHASING);
 
         Serial.println("2222222222222222222");
@@ -357,6 +360,12 @@ void loop() {
       }
       else if (checkEnemyPresence() == true) {
         chaseEnemy();
+
+        if (collision) {
+          // Start collision sequence
+          changeStateTo(S_COLLISION);
+          Serial.println("33333333333");
+        }
       }
       else if (checkEnemyPresence() == false)
       {
@@ -364,11 +373,6 @@ void loop() {
         changeStateTo(S_SEARCHING);
 
         Serial.println("6666666666");
-      }
-      else if (collision) {
-        // Start collision sequence
-        changeStateTo(S_COLLISION);
-        Serial.println("33333333333");
       }
       break;
 
