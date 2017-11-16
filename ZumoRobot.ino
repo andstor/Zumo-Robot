@@ -21,6 +21,9 @@ const int LED_PIN = 13;
 const int EYE_SENSOR_LEFT = A1;
 const int EYE_SENSOR_RIGHT = A2;
 
+// Window size of the median filter (odd number, 1 = no filtering)
+const byte mediumFilterWindowSize = 5;
+
 const int LEFT = 0;
 const int RIGHT = 1;
 
@@ -56,6 +59,10 @@ int directionTarget = 0;
 ZumoBuzzer buzzer;
 ZumoMotors motors;
 Pushbutton button(ZUMO_BUTTON); // pushbutton on pin 12
+
+// Create an object instance of the SharpDistSensor class
+SharpDistSensor sensorLeft(EYE_SENSOR_LEFT, mediumFilterWindowSize);
+SharpDistSensor sensorRight(EYE_SENSOR_RIGHT, mediumFilterWindowSize);
 
 
 const int NUM_SENSORS = 2;
@@ -118,7 +125,15 @@ bool checkBorderDetection() {
 void borderDetected() {
   sensors.read(sensor_values);
 
-  if (sensor_values[0] > QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
+  if (sensor_values[0] > QTR_THRESHOLD && sensor_values[1] > QTR_THRESHOLD) {
+    {
+      // otherwise, go straight backwards
+      motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+      delay(REVERSE_DURATION);
+
+    }
+  }
+  else if (sensor_values[0] > QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
   {
     // if leftmost sensor detects line, reverse and turn to the right
     motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
@@ -142,13 +157,6 @@ void borderDetected() {
 
     // Update direction target.
     directionTarget = LEFT;
-  }
-
-  // Må lage en state som detecterer hvilken av sensorene som er truffet, og sving deretter.
-  else
-  {
-    // otherwise, go straight
-    // motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
   }
 }
 
@@ -188,8 +196,9 @@ void borderDetected() {
 */
 
 void readDistanceSensors() {
-  leftDistance = analogRead(EYE_SENSOR_LEFT);
-  rightDistance = analogRead(EYE_SENSOR_RIGHT);
+  leftDistance = sensorLeft.getDist();
+  rightDistance = sensorRight.getDist();
+  // Get distance from sensor
 }
 
 
@@ -225,6 +234,9 @@ void searchForEnemy(int dir) {
    @return true if enemy is detected.
 */
 bool checkEnemyPresence() {
+  // Update distance sensor.
+  readDistanceSensors();
+
   if (leftDistance > DISTANCE_THRESHOLD || rightDistance > DISTANCE_THRESHOLD) {
     return true;
   }
@@ -237,14 +249,17 @@ bool checkEnemyPresence() {
 void chaseEnemy() {
   int multiplyer = 2;
   // SET LAST SEEN TARGET DIRECTION!!!!!!!!!!!!!!!!!!
-  if (leftDistance == 0 && rightDistance != 0) {
+  if (leftDistance > DISTANCE_THRESHOLD && rightDistance < DISTANCE_THRESHOLD) {
     // Object detected on right side.
-
+    directionTarget = RIGHT;
     motors.setLeftSpeed(SEARCH_SPEED);
     motors.setRightSpeed(SEARCH_SPEED);
   }
-  else if (leftDistance != 0 && rightDistance == 0) {
-
+  else if (leftDistance < DISTANCE_THRESHOLD && rightDistance > DISTANCE_THRESHOLD) {
+    // Object detected on left side.
+    directionTarget = LEFT;
+    motors.setLeftSpeed(SEARCH_SPEED);
+    motors.setRightSpeed(SEARCH_SPEED);
   }
   else {
     // Object is right in front.
@@ -311,7 +326,6 @@ void loop() {
   // SUPERIOR FUNCTON TO THE STATE MACHINE
   //borderDetected(); // Possibly run with a timer.
 
-  readDistanceSensors();
 
 
 
@@ -322,7 +336,6 @@ void loop() {
     case S_SEARCHING:
       if (checkBorderDetection()) {
         borderDetected();
-        searchForEnemy(directionTarget);
         Serial.println("Warning: Border detected!");
       }
       else if (checkEnemyPresence() == true)
@@ -336,14 +349,18 @@ void loop() {
 
     // State CHASING
     case S_CHASING:
+      //Run chasing function
       if (checkBorderDetection()) {
         borderDetected();
         searchForEnemy(directionTarget);
         changeStateTo(S_SEARCHING);
       }
+      else if (checkEnemyPresence() == true) {
+        chaseEnemy();
+      }
       else if (checkEnemyPresence() == false)
       {
-        // SATRT CHASING function
+        searchForEnemy(directionTarget);
         changeStateTo(S_SEARCHING);
 
         Serial.println("6666666666");
@@ -357,13 +374,7 @@ void loop() {
 
     // State COLLISION
     case S_COLLISION:
-      if (checkBorderDetection()) {
-        borderDetected();
-        searchForEnemy(directionTarget);
-        changeStateTo(S_SEARCHING);
-        Serial.println("44444444444");
-      }
-      else if (checkEnemyPresence() == false) {
+      if (checkEnemyPresence() == false) {
         // Start searching
         changeStateTo(S_SEARCHING);
         Serial.println("55555555555");
