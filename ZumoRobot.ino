@@ -21,15 +21,18 @@ const int LED_PIN = 13;
 const int EYE_SENSOR_LEFT = A1;
 const int EYE_SENSOR_RIGHT = A2;
 
+const int LEFT = 0;
+const int RIGHT = 1;
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 const int QTR_THRESHOLD     = 1800; //
+const int DISTANCE_THRESHOLD     = 500; //
 
 // these might need to be tuned for different motor types
-const int REVERSE_SPEED     = 200; // 0 is stopped, 400 is full speed
-const int TURN_SPEED        = 200;
-const int FORWARD_SPEED     = 400;
-const int SEARCH_SPEED      = 200;
+const int REVERSE_SPEED     = 100; // 0 is stopped, 400 is full speed
+const int TURN_SPEED        = 100;
+const int FORWARD_SPEED     = 100;
+const int SEARCH_SPEED      = 100;
 const int REVERSE_DURATION  = 200; // ms
 const int TURN_DURATION     = 300; // ms
 
@@ -47,7 +50,7 @@ bool enemyDetected = false;
 int leftDistance = 0;
 int rightDistance = 0;
 bool collision = false;
-
+int directionTarget = 0;
 
 /* Global objects */
 ZumoBuzzer buzzer;
@@ -96,9 +99,14 @@ bool checkBorderDetection() {
 
   if (sensor_values[0] > QTR_THRESHOLD || sensor_values[1] > QTR_THRESHOLD) { // Needs to be reversed if on black surface with white border.
     return true;
+    Serial.print("sensor_values[0]:::");
+    Serial.println(sensor_values[0]);
+    Serial.print("sensor_values[1]:::");
+    Serial.println(sensor_values[1]);
   }
   else {
     return false;
+    Serial.println("lolol2222222222222");
   }
 }
 
@@ -119,6 +127,8 @@ void borderDetected() {
     delay(TURN_DURATION);
     motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 
+    // Update direction target.
+    directionTarget = RIGHT;
 
   }
   else if (sensor_values[1] > QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
@@ -129,11 +139,16 @@ void borderDetected() {
     motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
     delay(TURN_DURATION);
     motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+
+    // Update direction target.
+    directionTarget = LEFT;
   }
+
+  // Må lage en state som detecterer hvilken av sensorene som er truffet, og sving deretter.
   else
   {
     // otherwise, go straight
-    motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+    // motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
   }
 }
 
@@ -178,10 +193,30 @@ void readDistanceSensors() {
 }
 
 
-void searchForEnemy() {
+void searchForEnemy(int dir) {
   checkEnemyPresence();
-  motors.setLeftSpeed(SEARCH_SPEED);
-  motors.setRightSpeed(-SEARCH_SPEED);
+  switch (dir)
+  {
+    case 0:
+      // Left
+      Serial.println("Info: Enemey seen to the left");
+      motors.setLeftSpeed(-SEARCH_SPEED);
+      motors.setRightSpeed(SEARCH_SPEED);
+      break;
+
+    case 1:
+      // Right
+      Serial.println("Info: Enemey seen to the right");
+
+      motors.setLeftSpeed(SEARCH_SPEED);
+      motors.setRightSpeed(-SEARCH_SPEED);
+      break;
+
+    default:
+      Serial.print("Error in searchForEnemy(): No direction provided!");
+      break;
+  }
+
 }
 
 
@@ -190,7 +225,7 @@ void searchForEnemy() {
    @return true if enemy is detected.
 */
 bool checkEnemyPresence() {
-  if (leftDistance != 0 || rightDistance != 0) {
+  if (leftDistance > DISTANCE_THRESHOLD || rightDistance > DISTANCE_THRESHOLD) {
     return true;
   }
   else {
@@ -201,7 +236,7 @@ bool checkEnemyPresence() {
 
 void chaseEnemy() {
   int multiplyer = 2;
-
+  // SET LAST SEEN TARGET DIRECTION!!!!!!!!!!!!!!!!!!
   if (leftDistance == 0 && rightDistance != 0) {
     // Object detected on right side.
 
@@ -243,7 +278,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
 
   waitForButtonAndCountDown(); // Wait for buttond and count down.
-  searchForEnemy();
+  searchForEnemy(directionTarget);
 
 }
 
@@ -262,7 +297,7 @@ void loop() {
   // Debugging
   if (debug == true) {
     /**
-     *  Ability to start or stop motors.
+        Ability to start or stop motors.
     */
     if (button.isPressed())
     {
@@ -280,48 +315,60 @@ void loop() {
 
 
 
-
   // The state machine implemented using switch-case
   switch (currentState)
   {
     // State SEARCHING
     case S_SEARCHING:
-      if (checkBorderDetection) {
+      if (checkBorderDetection()) {
         borderDetected();
-        searchForEnemy();
-        changeStateTo(S_SEARCHING);
+        searchForEnemy(directionTarget);
+        Serial.println("Warning: Border detected!");
       }
       else if (checkEnemyPresence() == true)
       {
         // SATRT CHASING function
         changeStateTo(S_CHASING);
+
+        Serial.println("2222222222222222222");
       }
       break;
 
     // State CHASING
     case S_CHASING:
-      if (checkBorderDetection) {
+      if (checkBorderDetection()) {
         borderDetected();
-        searchForEnemy();
+        searchForEnemy(directionTarget);
         changeStateTo(S_SEARCHING);
+      }
+      else if (checkEnemyPresence() == false)
+      {
+        // SATRT CHASING function
+        changeStateTo(S_SEARCHING);
+
+        Serial.println("6666666666");
       }
       else if (collision) {
         // Start collision sequence
         changeStateTo(S_COLLISION);
+        Serial.println("33333333333");
       }
       break;
 
     // State COLLISION
     case S_COLLISION:
-      if (checkBorderDetection) {
+      if (checkBorderDetection()) {
         borderDetected();
-        searchForEnemy();
+        searchForEnemy(directionTarget);
         changeStateTo(S_SEARCHING);
+        Serial.println("44444444444");
       }
       else if (checkEnemyPresence() == false) {
         // Start searching
         changeStateTo(S_SEARCHING);
+        Serial.println("55555555555");
       }
+
   }
 }
 
@@ -331,11 +378,11 @@ void loop() {
 
 
 /**
- * Prints the state to Serial Monitor as a text, based
- * on the state-constant provided as the parameter state
- *
- * @param state The state to print the tekst-representation for.
- */
+   Prints the state to Serial Monitor as a text, based
+   on the state-constant provided as the parameter state
+
+   @param state The state to print the tekst-representation for.
+*/
 void printState(int state)
 {
   switch (state)
