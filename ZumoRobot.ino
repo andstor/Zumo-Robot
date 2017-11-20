@@ -29,7 +29,7 @@ const int RIGHT = 1;
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 const int QTR_THRESHOLD     = 1800; //
-const int DISTANCE_THRESHOLD     = 500; //
+const int DISTANCE_THRESHOLD     = 600; //
 
 // these might need to be tuned for different motor types
 const int REVERSE_SPEED     = 100; // 0 is stopped, 400 is full speed
@@ -47,7 +47,7 @@ const int S_COLLISION = 2;
 
 
 /* Global variables */
-bool debug = true;
+bool debug = false;
 int currentState = S_SEARCHING;
 bool enemyDetected = false;
 int leftDistance = 0;
@@ -105,8 +105,10 @@ bool checkBorderDetection() {
   sensors.read(sensor_values);
 
   if (sensor_values[0] > QTR_THRESHOLD || sensor_values[1] > QTR_THRESHOLD) { // Needs to be reversed if on black surface with white border.
-    
-    
+    if (debug) {
+      Serial.println("Warning: Border detected!");
+    }
+
     return true;
   }
   else {
@@ -248,22 +250,26 @@ void chaseEnemy() {
   if (leftDistance > DISTANCE_THRESHOLD && rightDistance < DISTANCE_THRESHOLD) {
     // Object detected on right side.
     directionTarget = RIGHT;
-    Serial.println("Info: Enemey seen to the right");
-
+    if (debug) {
+      Serial.println("Info: Enemey seen to the right");
+    }
     motors.setLeftSpeed(FORWARD_SPEED);
-    motors.setRightSpeed(FORWARD_SPEED*multiplyer);
+    motors.setRightSpeed(FORWARD_SPEED * multiplyer);
   }
   else if (leftDistance < DISTANCE_THRESHOLD && rightDistance > DISTANCE_THRESHOLD) {
     // Object detected on left side.
     directionTarget = LEFT;
-    Serial.println("Info: Enemey seen to the left");
-
-    motors.setLeftSpeed(FORWARD_SPEED*multiplyer);
+    if (debug) {
+      Serial.println("Info: Enemey seen to the left");
+    }
+    motors.setLeftSpeed(FORWARD_SPEED * multiplyer);
     motors.setRightSpeed(FORWARD_SPEED);
   }
-  else if(leftDistance < DISTANCE_THRESHOLD && rightDistance < DISTANCE_THRESHOLD) {
+  else if (leftDistance < DISTANCE_THRESHOLD && rightDistance < DISTANCE_THRESHOLD) {
     // Object is right in front.
-    Serial.println("Info: Enemey up front");
+    if (debug) {
+      Serial.println("Info: Enemey up front");
+    }
     motors.setLeftSpeed(FORWARD_SPEED);
     motors.setRightSpeed(FORWARD_SPEED);
   }
@@ -338,15 +344,12 @@ void loop() {
     case S_SEARCHING:
       if (checkBorderDetection()) {
         borderDetected();
-        Serial.println("Warning: Border detected!");
       }
       else if (checkEnemyPresence() == true)
       {
         // SATRT CHASING function
         chaseEnemy();
         changeStateTo(S_CHASING);
-
-        Serial.println("2222222222222222222");
       }
       break;
 
@@ -364,7 +367,6 @@ void loop() {
         if (collision) {
           // Start collision sequence
           changeStateTo(S_COLLISION);
-          Serial.println("33333333333");
         }
       }
       else if (checkEnemyPresence() == false)
@@ -372,7 +374,6 @@ void loop() {
         searchForEnemy(directionTarget);
         changeStateTo(S_SEARCHING);
 
-        Serial.println("6666666666");
       }
       break;
 
@@ -381,7 +382,6 @@ void loop() {
       if (checkEnemyPresence() == false) {
         // Start searching
         changeStateTo(S_SEARCHING);
-        Serial.println("55555555555");
       }
 
   }
@@ -478,3 +478,4 @@ void changeStateTo(int newState)
 
 
 */
+
