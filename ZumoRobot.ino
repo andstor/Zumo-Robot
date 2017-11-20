@@ -29,25 +29,26 @@ const int RIGHT = 1;
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 const int QTR_THRESHOLD     = 1800; //
-const int DISTANCE_THRESHOLD     = 600; //
+const int DISTANCE_THRESHOLD     = 500; //
 
 // these might need to be tuned for different motor types
-const int REVERSE_SPEED     = 100; // 0 is stopped, 400 is full speed
-const int TURN_SPEED        = 100;
-const int FORWARD_SPEED     = 100;
-const int SEARCH_SPEED      = 100;
+const int REVERSE_SPEED     = 400; // 0 is stopped, 400 is full speed
+const int TURN_SPEED        = 400;
+const int FORWARD_SPEED     = 400;
+const int SEARCH_SPEED      = 200;
 const int REVERSE_DURATION  = 200; // ms
 const int TURN_DURATION     = 300; // ms
 
 
 // Constants representing the states in the state machine
-const int S_SEARCHING = 0;
-const int S_CHASING = 1;
-const int S_COLLISION = 2;
+const int S_DRIVE_RANDOM = 0
+const int S_SEARCHING = 1;
+const int S_CHASING = 2;
+const int S_ENEMY_LOST = 3;
 
 
 /* Global variables */
-bool debug = false;
+bool debug = true;
 int currentState = S_SEARCHING;
 bool enemyDetected = false;
 int leftDistance = 0;
@@ -104,7 +105,7 @@ void waitForButtonAndCountDown()
 bool checkBorderDetection() {
   sensors.read(sensor_values);
 
-  if (sensor_values[0] > QTR_THRESHOLD || sensor_values[1] > QTR_THRESHOLD) { // Needs to be reversed if on black surface with white border.
+  if (sensor_values[0] < QTR_THRESHOLD || sensor_values[1] < QTR_THRESHOLD) { // Needs to be reversed if on black surface with white border.
     if (debug) {
       Serial.println("Warning: Border detected!");
     }
@@ -124,7 +125,7 @@ bool checkBorderDetection() {
 void borderDetected() {
   sensors.read(sensor_values);
 
-  if (sensor_values[0] > QTR_THRESHOLD && sensor_values[1] > QTR_THRESHOLD) {
+  if (sensor_values[0] < QTR_THRESHOLD && sensor_values[1] < QTR_THRESHOLD) {
     {
       // otherwise, go straight backwards
       motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
@@ -132,7 +133,7 @@ void borderDetected() {
 
     }
   }
-  else if (sensor_values[0] > QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
+  else if (sensor_values[0] < QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
   {
     // if leftmost sensor detects line, reverse and turn to the right
     motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
@@ -145,7 +146,7 @@ void borderDetected() {
     directionTarget = RIGHT;
     Serial.println(directionTarget);
   }
-  else if (sensor_values[1] > QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
+  else if (sensor_values[1] <  QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
   {
     // if rightmost sensor detects line, reverse and turn to the left
     motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
@@ -252,7 +253,11 @@ void chaseEnemy() {
     directionTarget = RIGHT;
     if (debug) {
       Serial.println("Info: Enemey seen to the right");
+      Serial.println(rightDistance);
+
     }
+    buzzer.playNote(NOTE_G(4), 200, 15);
+
     motors.setLeftSpeed(FORWARD_SPEED);
     motors.setRightSpeed(FORWARD_SPEED * multiplyer);
   }
@@ -261,7 +266,10 @@ void chaseEnemy() {
     directionTarget = LEFT;
     if (debug) {
       Serial.println("Info: Enemey seen to the left");
+      Serial.println(leftDistance);
     }
+    buzzer.playNote(NOTE_G(3), 200, 15);
+
     motors.setLeftSpeed(FORWARD_SPEED * multiplyer);
     motors.setRightSpeed(FORWARD_SPEED);
   }
@@ -269,7 +277,10 @@ void chaseEnemy() {
     // Object is right in front.
     if (debug) {
       Serial.println("Info: Enemey up front");
+
     }
+    buzzer.playNote(NOTE_G(2), 200, 15);
+
     motors.setLeftSpeed(FORWARD_SPEED);
     motors.setRightSpeed(FORWARD_SPEED);
   }
@@ -340,6 +351,18 @@ void loop() {
   // The state machine implemented using switch-case
   switch (currentState)
   {
+    // State RANDOM DRIVIG
+    case S_DRIVE_RANDOM:
+      if (checkBorderDetection()) {
+        borderDetected();
+      }
+      else if (checkEnemyPresence() == true) {
+        // SATRT CHASING function
+        chaseEnemy();
+        changeStateTo(S_CHASING);
+      }
+
+
     // State SEARCHING
     case S_SEARCHING:
       if (checkBorderDetection()) {
@@ -358,27 +381,22 @@ void loop() {
       //Run chasing function
       if (checkBorderDetection()) {
         borderDetected();
-        searchForEnemy(directionTarget);
-        changeStateTo(S_SEARCHING);
       }
       else if (checkEnemyPresence() == true) {
         chaseEnemy();
-
-        if (collision) {
-          // Start collision sequence
-          changeStateTo(S_COLLISION);
-        }
+      }
+      else if (timer lololololololololllllllllllloloololllol) {
+        changeStateTo(S_DRIVE_RANDOM);
       }
       else if (checkEnemyPresence() == false)
       {
         searchForEnemy(directionTarget);
-        changeStateTo(S_SEARCHING);
-
+        changeStateTo(S_ENEMY_LOST);
       }
       break;
 
-    // State COLLISION
-    case S_COLLISION:
+    // State ENEMY_LOST
+    case S_ENEMY_LOST:
       if (checkEnemyPresence() == false) {
         // Start searching
         changeStateTo(S_SEARCHING);
