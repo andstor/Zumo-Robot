@@ -76,7 +76,7 @@ const int S_CHASING = 2;
 
 
 /* Global variables */
-bool debug = true;
+bool debug = false;
 int currentState = S_DRIVE_RANDOM;
 bool enemyDetected = false;
 int leftDistance = 0;
@@ -188,40 +188,6 @@ void borderDetected() {
 }
 
 
-
-
-/*
-  void enemyDetection(int LEFT, int RIGHT) {
-  int leftDistance = analogRead(EYE_SENSOR_LEFT);
-  int rightDistance = analogRead(EYE_SENSOR_RIGHT);
-
-  int multiplyer = 2;
-
-  if (!distance) {
-    // No object detected.
-
-    motors.setLeftSpeed(-SEARCH_SPEED);
-    motors.setRightSpeed(SEARCH_SPEED);
-  }
-  else if (leftDistance == 0 && rightDistance != 0) {
-    // Object detected on right side.
-
-    motors.setLeftSpeed(SEARCH_SPEED);
-    motors.setRightSpeed(SEARCH_SPEED);
-  }
-  else if (leftDistance != 0 && rightDistance == 0) {
-
-  }
-  else {
-    // Object is right in front.
-    motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-
-  }
-
-
-  }
-*/
-
 void readDistanceSensors() {
   leftDistance = sensorLeft.getDist();
   rightDistance = sensorRight.getDist();
@@ -328,18 +294,11 @@ void setup() {
     Serial.begin(9600);
   }
 
-  // Initiate ZumoReflectanceSensorArray sensors.
-  //sensors.init;
-
-  // Uncomment if necessary to correct motor directions
-  //motors.flipLeftMotor(true);
-  //motors.flipRightMotor(true);
-
   pinMode(LED_PIN, OUTPUT);
 
   waitForButtonAndCountDown(); // Wait for buttond and count down.
   searchForEnemy(directionTarget);
-  //motors.setSpeeds(400, 400);
+  motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 }
 
 
@@ -366,11 +325,6 @@ void loop() {
       button.waitForRelease();
     }
   }
-
-
-  // SUPERIOR FUNCTON TO THE STATE MACHINE
-  //borderDetected(); // Possibly run with a timer.
-
 
 
 
@@ -419,11 +373,6 @@ void loop() {
         timerEnemyDetected.reset(EMENY_LOST_TIMER);
       }
 
-      /* else if (timerEnemyDetected.expired() == true) {
-         motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-         Serial.println("trtetetetettetetetetetetete");
-         changeStateTo(S_DRIVE_RANDOM);
-        }*/
       else if (checkEnemyPresence() == false)
       {
         searchForEnemy(directionTarget);
@@ -488,44 +437,4 @@ void changeStateTo(int newState)
   // And finally, set the current state to the new state
   currentState = newState;
 }
-
-
-
-
-
-/**
-    Checks if the timer has expired. If the timer has expired,
-    true is returned. If the timer has not yet expired,
-    false is returned.
-
-    @return true if timer has expired, false if not
-
-
-  boolean timerHasExpired()
-  {
-  boolean hasExpired = false;
-  if (millis() > nextTimeout)
-  {
-    hasExpired = true;
-  }
-  else
-  {
-    hasExpired = false;
-  }
-  return hasExpired;
-  }
-
-  /**
-   Starts the timer and set the timer to expire after the
-   number of milliseconds given by the parameter duration.
-
-   @param duration The number of milliseconds until the timer expires.
-
-  void startTimer(unsigned long duration)
-  {
-  nextTimeout = millis() + duration;
-  }
-
-
-*/
 
