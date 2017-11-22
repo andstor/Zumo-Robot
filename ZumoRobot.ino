@@ -15,6 +15,32 @@
 #include <SharpDistSensor.h>
 
 
+class Timer {
+    unsigned long nextTimeout;
+    boolean hasExpired;
+
+  public:
+    Timer(unsigned long duration) {
+      nextTimeout = millis() + duration;
+    }
+
+    boolean expired() {
+      hasExpired = false;
+      if (millis() > nextTimeout) {
+        hasExpired = true;
+      }
+      else {
+        hasExpired = false;
+      }
+      return hasExpired;
+    }
+
+    void reset(unsigned long duration) {
+      nextTimeout = millis() + duration;
+      //Serial.println("Reset the timer");
+    }
+};
+
 
 /* Global constants */
 const int LED_PIN = 13;
@@ -28,28 +54,30 @@ const int LEFT = 0;
 const int RIGHT = 1;
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
-const int QTR_THRESHOLD     = 1800; //
-const int DISTANCE_THRESHOLD     = 500; //
+const int QTR_THRESHOLD        = 1800; //
+const int DISTANCE_THRESHOLD   = 500; //
+const int EMENY_LOST_TIMER     = 500;
 
 // these might need to be tuned for different motor types
 const int REVERSE_SPEED     = 400; // 0 is stopped, 400 is full speed
 const int TURN_SPEED        = 400;
-const int FORWARD_SPEED     = 400;
+const int FORWARD_SPEED     = 320;
+const int MAX_SPEED         = 400;
 const int SEARCH_SPEED      = 200;
 const int REVERSE_DURATION  = 200; // ms
 const int TURN_DURATION     = 300; // ms
 
 
 // Constants representing the states in the state machine
-const int S_DRIVE_RANDOM = 0
+const int S_DRIVE_RANDOM = 0;
 const int S_SEARCHING = 1;
 const int S_CHASING = 2;
-const int S_ENEMY_LOST = 3;
+
 
 
 /* Global variables */
 bool debug = true;
-int currentState = S_SEARCHING;
+int currentState = S_DRIVE_RANDOM;
 bool enemyDetected = false;
 int leftDistance = 0;
 int rightDistance = 0;
@@ -60,6 +88,7 @@ int directionTarget = 0;
 ZumoBuzzer buzzer;
 ZumoMotors motors;
 Pushbutton button(ZUMO_BUTTON); // pushbutton on pin 12
+Timer timerEnemyDetected(EMENY_LOST_TIMER);
 
 // Create an object instance of the SharpDistSensor class
 SharpDistSensor sensorLeft(EYE_SENSOR_LEFT, mediumFilterWindowSize);
@@ -71,7 +100,6 @@ unsigned int sensor_values[NUM_SENSORS]; // Array to keep sensor values from Zum
 
 byte pins[] = {4, 5};
 ZumoReflectanceSensorArray sensors(pins, 2, 2000, QTR_NO_EMITTER_PIN); // 2000 = timeout after 2 ms;
-
 
 
 /**
@@ -92,10 +120,6 @@ void waitForButtonAndCountDown()
   delay(1000);
   buzzer.playNote(NOTE_G(4), 500, 15);
   delay(1000);
-
-  if (debug) {
-    Serial.println();
-  }
 }
 
 
@@ -125,30 +149,18 @@ bool checkBorderDetection() {
 void borderDetected() {
   sensors.read(sensor_values);
 
-  if (sensor_values[0] < QTR_THRESHOLD && sensor_values[1] < QTR_THRESHOLD) {
-    {
-      // otherwise, go straight backwards
-      motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-      delay(REVERSE_DURATION);
+  if (sensor_values[0] > QTR_THRESHOLD && sensor_values[1] > QTR_THRESHOLD) {
 
-    }
-  }
-  else if (sensor_values[0] < QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
-  {
-    // if leftmost sensor detects line, reverse and turn to the right
+    // otherwise, go straight backwards
     motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
     delay(REVERSE_DURATION);
-    motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+    motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
     delay(TURN_DURATION);
-    motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 
-    // Update direction target.
-    directionTarget = RIGHT;
-    Serial.println(directionTarget);
   }
-  else if (sensor_values[1] <  QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
+  else if (sensor_values[0] > QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
   {
-    // if rightmost sensor detects line, reverse and turn to the left
+    // if leftmost sensor detects line, reverse and turn to the right
     motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
     delay(REVERSE_DURATION);
     motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
@@ -156,9 +168,23 @@ void borderDetected() {
     motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 
     // Update direction target.
+    directionTarget = RIGHT;
+    Serial.println(directionTarget);
+  }
+  else if (sensor_values[1] >  QTR_THRESHOLD) // Needs to be reversed if on black surface with white border.
+  {
+    // if rightmost sensor detects line, reverse and turn to the left
+    motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+    delay(REVERSE_DURATION);
+    motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+    delay(TURN_DURATION);
+    motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+
+    // Update direction target.
     directionTarget = LEFT;
     Serial.println(directionTarget);
   }
+  motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 }
 
 
@@ -246,7 +272,7 @@ bool checkEnemyPresence() {
 
 
 void chaseEnemy() {
-  int multiplyer = 0.2;
+  int multiplyer = 200;
   // SET LAST SEEN TARGET DIRECTION!!!!!!!!!!!!!!!!!!
   if (leftDistance > DISTANCE_THRESHOLD && rightDistance < DISTANCE_THRESHOLD) {
     // Object detected on right side.
@@ -256,10 +282,10 @@ void chaseEnemy() {
       Serial.println(rightDistance);
 
     }
-    buzzer.playNote(NOTE_G(4), 200, 15);
+    // buzzer.playNote(NOTE_G(4), 200, 15);
 
     motors.setLeftSpeed(FORWARD_SPEED);
-    motors.setRightSpeed(FORWARD_SPEED * multiplyer);
+    motors.setRightSpeed(FORWARD_SPEED - multiplyer);
   }
   else if (leftDistance < DISTANCE_THRESHOLD && rightDistance > DISTANCE_THRESHOLD) {
     // Object detected on left side.
@@ -268,9 +294,9 @@ void chaseEnemy() {
       Serial.println("Info: Enemey seen to the left");
       Serial.println(leftDistance);
     }
-    buzzer.playNote(NOTE_G(3), 200, 15);
+    // buzzer.playNote(NOTE_G(3), 200, 15);
 
-    motors.setLeftSpeed(FORWARD_SPEED * multiplyer);
+    motors.setLeftSpeed(FORWARD_SPEED - multiplyer);
     motors.setRightSpeed(FORWARD_SPEED);
   }
   else if (leftDistance < DISTANCE_THRESHOLD && rightDistance < DISTANCE_THRESHOLD) {
@@ -279,7 +305,7 @@ void chaseEnemy() {
       Serial.println("Info: Enemey up front");
 
     }
-    buzzer.playNote(NOTE_G(2), 200, 15);
+    // buzzer.playNote(NOTE_G(2), 200, 15);
 
     motors.setLeftSpeed(FORWARD_SPEED);
     motors.setRightSpeed(FORWARD_SPEED);
@@ -313,7 +339,7 @@ void setup() {
 
   waitForButtonAndCountDown(); // Wait for buttond and count down.
   searchForEnemy(directionTarget);
-
+  //motors.setSpeeds(400, 400);
 }
 
 
@@ -351,8 +377,9 @@ void loop() {
   // The state machine implemented using switch-case
   switch (currentState)
   {
-    // State RANDOM DRIVIG
+    // State RANDOM DRIVING
     case S_DRIVE_RANDOM:
+
       if (checkBorderDetection()) {
         borderDetected();
       }
@@ -362,6 +389,7 @@ void loop() {
         changeStateTo(S_CHASING);
       }
 
+      break;
 
     // State SEARCHING
     case S_SEARCHING:
@@ -373,6 +401,10 @@ void loop() {
         // SATRT CHASING function
         chaseEnemy();
         changeStateTo(S_CHASING);
+      } else if (timerEnemyDetected.expired() == true) {
+        motors.setSpeeds(MAX_SPEED, MAX_SPEED);
+        changeStateTo(S_DRIVE_RANDOM);
+
       }
       break;
 
@@ -384,23 +416,21 @@ void loop() {
       }
       else if (checkEnemyPresence() == true) {
         chaseEnemy();
+        timerEnemyDetected.reset(EMENY_LOST_TIMER);
       }
-      else if (timer lololololololololllllllllllloloololllol) {
-        changeStateTo(S_DRIVE_RANDOM);
-      }
+
+      /* else if (timerEnemyDetected.expired() == true) {
+         motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+         Serial.println("trtetetetettetetetetetetete");
+         changeStateTo(S_DRIVE_RANDOM);
+        }*/
       else if (checkEnemyPresence() == false)
       {
         searchForEnemy(directionTarget);
-        changeStateTo(S_ENEMY_LOST);
+        changeStateTo(S_SEARCHING);
       }
       break;
 
-    // State ENEMY_LOST
-    case S_ENEMY_LOST:
-      if (checkEnemyPresence() == false) {
-        // Start searching
-        changeStateTo(S_SEARCHING);
-      }
 
   }
 }
@@ -420,6 +450,11 @@ void printState(int state)
 {
   switch (state)
   {
+
+    case S_DRIVE_RANDOM:
+      Serial.print("S_DRIVE_RANDOM");
+      break;
+
     case S_SEARCHING:
       Serial.print("S_SEARCHING");
       break;
@@ -428,9 +463,6 @@ void printState(int state)
       Serial.print("S_CHASING");
       break;
 
-    case S_COLLISION:
-      Serial.print("S_COLLISION");
-      break;
 
     default:
       Serial.print("!!UNKNOWN!!");
