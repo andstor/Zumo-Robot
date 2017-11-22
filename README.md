@@ -3,7 +3,7 @@
 
 ## Dependencies
 In order to compile and run this program, several **dependencies**(libraries) has to be installed.
-These can be found under "dependencies".
+These can be found under "libraries".
 
 ### Install instructions
 Each library has to be copied to the local Arduino-installation "library"-folder, inside sketchbook location. To see the sketchbook folder-location, go to **preferences** and "Sketchbook location" in the Arduino-IDE.
