@@ -14,7 +14,10 @@
 #include <ZumoReflectanceSensorArray.h>
 #include <SharpDistSensor.h>
 
-
+/**
+ * Timer class
+ * Able to handle multiple timers.
+ */
 class Timer {
     unsigned long nextTimeout;
     boolean hasExpired;
@@ -125,7 +128,10 @@ void waitForButtonAndCountDown()
 
 
 
-
+/**
+ * Checks if border is detected.
+ * @returns {bool} True if border is detected, otherwise false.
+ */
 bool checkBorderDetection() {
   sensors.read(sensor_values);
 
@@ -143,15 +149,17 @@ bool checkBorderDetection() {
 
 
 /**
-   Drive forward and turn left or right when border is detected
-   - Only reflectionsensor on pin 5 and 4 are used.
+ * Drive forward and turn left or right when border is detected.
+ * Only reflectionsensor on pin 5 and 4 are used.
+ * 
+ * Updates the directionTarget.
 */
 void borderDetected() {
   sensors.read(sensor_values);
 
   if (sensor_values[0] > QTR_THRESHOLD && sensor_values[1] > QTR_THRESHOLD) {
 
-    // otherwise, go straight backwards
+    // If border is detected by both sensors, drive straight backwards.
     motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
     delay(REVERSE_DURATION);
     motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
@@ -187,14 +195,20 @@ void borderDetected() {
   motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 }
 
-
+/**
+ * Reads the distance sensor values and stores
+ * them in two global variabes to be used by multiple other functions.
+ */
 void readDistanceSensors() {
   leftDistance = sensorLeft.getDist();
   rightDistance = sensorRight.getDist();
   // Get distance from sensor
 }
 
-
+/**
+ * Turns robot (in searching position) in the provided direction (the enemy direction).
+ * @param dir Direction for which way to turn.
+ */
 void searchForEnemy(int dir) {
   checkEnemyPresence();
   switch (dir)
@@ -216,9 +230,7 @@ void searchForEnemy(int dir) {
       Serial.print("Error in searchForEnemy(): No direction provided!");
       break;
   }
-
 }
-
 
 /**
    Checks for enemy.
@@ -237,6 +249,10 @@ bool checkEnemyPresence() {
 }
 
 
+/**
+ * The robot chases the enemy by 
+ * adjusting right and left motor speed.
+ */
 void chaseEnemy() {
   int multiplyer = 200;
   // SET LAST SEEN TARGET DIRECTION!!!!!!!!!!!!!!!!!!
@@ -248,7 +264,6 @@ void chaseEnemy() {
       Serial.println(rightDistance);
 
     }
-    // buzzer.playNote(NOTE_G(4), 200, 15);
 
     motors.setLeftSpeed(FORWARD_SPEED);
     motors.setRightSpeed(FORWARD_SPEED - multiplyer);
@@ -260,7 +275,6 @@ void chaseEnemy() {
       Serial.println("Info: Enemey seen to the left");
       Serial.println(leftDistance);
     }
-    // buzzer.playNote(NOTE_G(3), 200, 15);
 
     motors.setLeftSpeed(FORWARD_SPEED - multiplyer);
     motors.setRightSpeed(FORWARD_SPEED);
@@ -269,9 +283,7 @@ void chaseEnemy() {
     // Object is right in front.
     if (debug) {
       Serial.println("Info: Enemey up front");
-
     }
-    // buzzer.playNote(NOTE_G(2), 200, 15);
 
     motors.setLeftSpeed(FORWARD_SPEED);
     motors.setRightSpeed(FORWARD_SPEED);
@@ -419,7 +431,11 @@ void printState(int state)
   }
 }
 
-
+/**
+ * Changes the state.
+ * 
+ * Supports optional debugging info aboute state changes.
+ */
 void changeStateTo(int newState)
 {
   // At this point, we now what the current state is (the value
